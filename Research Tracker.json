@@ -1,0 +1,569 @@
+{
+  "name": "Research Tracker",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -16
+      ],
+      "id": "69539fa6-dd33-4cc8-aa82-6ab4bca142fd",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "http://export.arxiv.org/api/query?search_query=cat:cs.LG&start=0&max_results=3&sortBy=submittedDate&sortOrder=descending",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -192,
+        -16
+      ],
+      "id": "a40eb0fa-1e26-4d55-9d81-e354be2f8176",
+      "name": "arXiv request"
+    },
+    {
+      "parameters": {
+        "dataPropertyName": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -16
+      ],
+      "id": "c2bacdd9-60b6-40ff-ae27-5e30883cbd39",
+      "name": "XML to JSON"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "YOUR_NOTION_DATABASE_ID",
+          "mode": "id"
+        },
+        "title": "Research Tracker",
+        "simple": false,
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Titel|title",
+              "title": "={{ $json.title }}"
+            },
+            {
+              "key": "Zusammenfassung|rich_text",
+              "textContent": "={{ $json.summary }}"
+            },
+            {
+              "key": "Quelle|rich_text",
+              "textContent": "={{ $json.source }}"
+            },
+            {
+              "key": "Datum|date",
+              "date": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm\") }}",
+              "timezone": "Europe/Berlin"
+            },
+            {
+              "key": "URL|url",
+              "urlValue": "={{ $json.url }}"
+            },
+            {
+              "key": "Dateien und Medien|files",
+              "fileUrls": {
+                "fileUrl": [
+                  {
+                    "name": "PDF",
+                    "url": "={{ $json.data_file }}"
+                  }
+                ]
+              }
+            },
+            {
+              "key": "Tags|rich_text",
+              "textContent": "={{ $json.tags }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        2256,
+        -16
+      ],
+      "id": "31cbec70-64c5-458a-bb3b-cb5b8bb6dad5",
+      "name": "Notion API",
+      "credentials": {
+        "notionApi": {
+          "id": "beV3VwPAXfFixtxb",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_GROQ_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"model\": \"llama-3.1-8b-instant\",\n    \"response_format\": { \"type\": \"json_object\" },\n    \"messages\": [\n      {\n        \"role\": \"system\",\n        \"content\": $json.system_prompt\n      },\n      {\n        \"role\": \"user\",\n        \"content\": $json.example_user_prompt\n      },\n      {\n        \"role\": \"assistant\",\n        \"content\": $json.example_assistant_prompt\n      },\n      {\n        \"role\": \"user\",\n        \"content\": $json.user_prompt\n      }\n    ]\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1056,
+        -16
+      ],
+      "id": "4b1f1920-935e-44c9-b60b-795f487e41fd",
+      "name": "Groq API"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "69a3e447-28a3-4523-a364-f85579b208f7",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "dcd8bdcf-a86e-4198-a8f8-9ce65bdac550",
+              "name": "content",
+              "value": "={{ $json.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "0cb8db15-b06c-4873-9cb9-3f3979316c56",
+              "name": "url",
+              "value": "={{ $json.link[0].href }}",
+              "type": "string"
+            },
+            {
+              "id": "2ec60a89-f1c9-487f-98ed-c68c4ac7847a",
+              "name": "published",
+              "value": "={{ $json.published }}",
+              "type": "string"
+            },
+            {
+              "id": "1ecd5296-4920-46a8-ab8f-387e450361cf",
+              "name": "source",
+              "value": "arXiv",
+              "type": "string"
+            },
+            {
+              "id": "66e787da-2297-411a-9eb4-7e94214908e9",
+              "name": "data_file",
+              "value": "={{ $json.link[1].href }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -16
+      ],
+      "id": "1d3bfe89-43c6-446d-97fa-a9f6ebbe8ba8",
+      "name": "Parse JSON"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "feed.entry",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -16
+      ],
+      "id": "914d4518-43e8-4818-ab55-aa7d25679dd0",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "YOUR_NOTION_DATABASE_ID",
+          "mode": "list",
+          "cachedResultName": "Research Tracker",
+          "cachedResultUrl": "https://www.notion.so/YOUR_NOTION_DATABASE_ID"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        -16
+      ],
+      "id": "4d79c7db-3607-4049-b613-ec95006fa344",
+      "name": "Get many database pages",
+      "alwaysOutputData": true,
+      "credentials": {
+        "notionApi": {
+          "id": "beV3VwPAXfFixtxb",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "44b0afcf-f700-4a8c-bcbf-f7d66176c2f8",
+              "leftValue": "={{ $json.isDuplicate }}",
+              "rightValue": "={{ false }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2032,
+        -16
+      ],
+      "id": "65b512f4-74f4-4a27-b854-4a57fe9cd6b6",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2704,
+        -16
+      ],
+      "id": "bb60af44-5249-4007-9592-d897ee425f2e",
+      "name": "Discord webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $('If').all();\nconst embeds = [];\n\n// Alle Paper durchlaufen und als Embed formatieren\nfor (const paper of items) {\n  const item = paper.json;\n  \n  const cleanSummary = (item.summary || '')\n    .replace(/\"/g, \"'\")\n    .replace(/\\n/g, \" \")\n    .replace(/\\r/g, \"\");\n\n  embeds.push({\n    title: item.title,\n    url: item.url,\n    description: cleanSummary,\n    color: 5793266,\n        fields: [\n      // Zeile 1: Links | Mitte (Leer) | Rechts\n      { name: \"📅 Datum\", value: item.published || \"unbekannt\", inline: true },\n      { name: \"\\u200B\", value: \"\\u200B\", inline: true },\n      { name: \"🗂️ Quelle\", value: item.source || \"arXiv\", inline: true },\n      \n      // Zeile 2: Links | Mitte (Leer) | Rechts\n      { name: \"🔖 Tags\", value: item.tags || \"unbekannt\", inline: true },\n      { name: \"\\u200B\", value: \"\\u200B\", inline: true },\n      { name: \"📄 PDF\", value: \"[Download](\" + item.data_file + \")\", inline: true }\n    ],\n    footer: { text: \"Research Tracker • arXiv\" }\n  });\n}\n\n// Discord-Limit: Max 10 Embeds pro Nachricht\nconst safeEmbeds = embeds.slice(0, 10);\n\nconst discordData = {\n  content: `Es wurden ${embeds.length} neue Artikel importiert!`,\n  embeds: safeEmbeds\n};\n\nreturn [{\n  json: {\n    payload: discordData\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2480,
+        -16
+      ],
+      "id": "5274818a-f8cc-48e5-aaa1-38c64f2da4e6",
+      "name": "DC-webhook-payload"
+    },
+    {
+      "parameters": {
+        "jsCode": "const notionItems = $input.all();\nconst parseItems = $('Parse JSON').all();\nconst summaryItems = $('Extract').all();\n\nconst existingUrls = notionItems\n  .map(item => item.json.property_url)\n  .filter(Boolean);\n\nreturn parseItems.map((paper, index) => {\n  const currentUrl = paper.json.url;\n  const isDuplicate = existingUrls.includes(currentUrl);\n  const summary = summaryItems[index]?.json?.summary ?? '';\n  const tags = summaryItems[index]?.json?.tags ?? '';\n\n  return {\n    json: {\n      ...paper.json,\n      summary: summary,\n      tags: tags,\n      isDuplicate: isDuplicate\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        -16
+      ],
+      "id": "3ef9609d-1a05-4309-8744-b1c2046c8f60",
+      "name": "merge & duplicate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ac2987b-9f0a-4de6-954b-76c8a637ea1b",
+              "name": "system_prompt",
+              "value": "Du bist ein objektiver, technischer Redakteur. Deine Aufgabe ist es, den Text zu analysieren und AUSSCHLIESSLICH ein valides JSON-Objekt zurückzugeben.\nRegeln für das JSON:\n\n1. Schlüssel 'zusammenfassung': Exakt zwei kurze, deutsche Sätze (max. 20 Wörter pro Satz).\nSTRIKTE BLACKLIST: Die Wörter 'Studie', 'Paper', 'Artikel', 'untersucht', 'zeigt', 'stellt vor' sind verboten!\nGRAMMATIK-ZWANG: Der erste Satz MUSS direkt mit dem Namen der Kerntechnologie, des Modells oder der Methode als Subjekt beginnen.\n\n2. Schlüssel 'tags': Ein Array mit 1 bis maximal 3 extrem kurzen Schlagwörtern. WICHTIG: Generiere nur so viele Tags, wie absolut notwendig. Bei spezifischen Themen genügt oft 1 Tag. Jedes Tag darf aus maximal einem Wort (oder einem Akronym) bestehen. Bevorzuge gängige Abkürzungen (z.B. AI, IoT, ML, NLP). Keine Phrasen oder zusammengesetzten Wörter.\n\nWICHTIG: Gib nur das nackte JSON aus, keinen Text davor oder danach.",
+              "type": "string"
+            },
+            {
+              "id": "158b9962-992f-43ae-ada2-88a1731ce69e",
+              "name": "user_prompt",
+              "value": "=Analysiere den folgenden Artikel und wende die Systemregeln strikt an.  <titel> {{ $json.title }} </titel>  <inhalt> {{ $json.content }} </inhalt>  Erstelle nun die Zusammenfassung in exakt 2 Sätzen:",
+              "type": "string"
+            },
+            {
+              "id": "c4a4e14c-5b46-49ac-a160-9eb12fc01294",
+              "name": "example_user_prompt",
+              "value": "Analysiere den folgenden Artikel und wende die Systemregeln strikt an.  <titel> Efficient Routing in Neural Networks </titel>  <inhalt> This paper introduces a novel routing algorithm designed to minimize latency in deep neural networks. By optimizing data paths dynamically, the proposed method reduces inference time by up to 20% while maintaining model accuracy. </inhalt>  Erstelle nun die Zusammenfassung in exakt 2 Sätzen:",
+              "type": "string"
+            },
+            {
+              "id": "a5136145-6dd9-4907-bb92-c0070c3d0b88",
+              "name": "example_assistant_prompt",
+              "value": "{\n\"zusammenfassung\": \"Ein neuer Routing-Algorithmus für tiefe neuronale Netze optimiert die Datenpfade dynamisch. Dadurch sinkt die Latenzzeit bei der Inferenz um bis zu 20 Prozent, ohne die Genauigkeit des Modells zu beeinträchtigen.\",\n\"tags\": [\"AI\", \"Routing\"]\n}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        -16
+      ],
+      "id": "e149481b-130f-45d2-8a74-4e5afead0a5d",
+      "name": "prompting"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "80084362-8137-4025-9294-64493acc6710",
+              "name": "summary",
+              "value": "={{ JSON.parse($json.choices[0].message.content).zusammenfassung }}",
+              "type": "string"
+            },
+            {
+              "id": "6b86ae91-d803-4c47-9765-35927d7d36e8",
+              "name": "tags",
+              "value": "={{ JSON.parse($json.choices[0].message.content).tags.join(', ') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        -16
+      ],
+      "id": "c2496a8d-6371-4381-ac96-5ecf641cc13c",
+      "name": "Extract"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "arXiv request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "arXiv request": {
+      "main": [
+        [
+          {
+            "node": "XML to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML to JSON": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq API": {
+      "main": [
+        [
+          {
+            "node": "Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "prompting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many database pages": {
+      "main": [
+        [
+          {
+            "node": "merge & duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Notion API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Notion API": {
+      "main": [
+        [
+          {
+            "node": "DC-webhook-payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord webhook": {
+      "main": [
+        []
+      ]
+    },
+    "DC-webhook-payload": {
+      "main": [
+        [
+          {
+            "node": "Discord webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge & duplicate": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prompting": {
+      "main": [
+        [
+          {
+            "node": "Groq API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract": {
+      "main": [
+        [
+          {
+            "node": "Get many database pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "53ceb73b-29d9-4d6a-ad04-d81fde22a8f4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "526e775ad4acbad73e1d0fc82ef9ce53b86439200c03e69ff0d6611558561424"
+  },
+  "id": "0ksqsi6o0l46lnGB",
+  "tags": [
+    {
+      "updatedAt": "2026-04-01T08:30:15.451Z",
+      "createdAt": "2026-04-01T08:30:15.451Z",
+      "id": "CqR5WcplzdSPbzcQ",
+      "name": "API"
+    },
+    {
+      "updatedAt": "2026-04-01T08:30:23.911Z",
+      "createdAt": "2026-04-01T08:30:23.911Z",
+      "id": "gGMo2pQWrZ3s5hjH",
+      "name": "Trigger"
+    },
+    {
+      "updatedAt": "2026-04-01T08:30:11.732Z",
+      "createdAt": "2026-04-01T08:30:11.732Z",
+      "id": "jHjx9V5DCL6uKxen",
+      "name": "KI"
+    }
+  ]
+}
